@@ -17,7 +17,6 @@
         return found ? found.title : 'Фільмікс';
     }
 
-    // ====================== API ====================
     class FilmixApi   { static getMovies() { return fetch('https://filmix.ru/api/movies?limit=12&source=filmix').then(r => r.json()); } }
     class RezkaApi    { static getMovies() { return fetch('https://rezka.ag/api/movies?limit=12&source=rezka').then(r => r.json()); } }
     class UAFlixApi   { static getMovies() { return fetch('https://uaflix.net/api/movies?limit=12&source=uaflix').then(r => r.json()); } }
@@ -34,7 +33,6 @@
         }
     }
 
-    // ====================== Активність головної сторінки ====================
     function HomeActivity.render(source) {
         const sections = [
             { title: 'Нові фільми', type: 'movies' },
@@ -83,7 +81,6 @@
         return container;
     }
 
-    // ====================== ПЛАГІН ====================
     function initPlugin() {
         if (window.lampa_lampa_inited) return;
         window.lampa_lampa_inited = true;
@@ -154,7 +151,7 @@
             }
         });
 
-        // === ПУНКТ У НАЛАШТУВАННЯХ (виправлений) ===
+        // === ОКРЕМИЙ ПУНКТ "ОСНОВНІ ДЖЕРЕЛА" ===
         Lampa.SettingsApi.addParam({
             component: 'interface',
             param: {
@@ -214,7 +211,7 @@
             btn.find('span').text(`Лампа: ${mode.toUpperCase()}`);
         }
 
-        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — плагін завантажено`);
+        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — пункт "Основні джерела" готовий!`);
     }
 
     if (window.appready) {
