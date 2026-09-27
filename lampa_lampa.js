@@ -17,6 +17,7 @@
         return found ? found.title : 'Фільмікс';
     }
 
+    // API для завантаження (приклад)
     class FilmixApi   { static getMovies() { return fetch('https://filmix.ru/api/movies?limit=12&source=filmix').then(r => r.json()); } }
     class RezkaApi    { static getMovies() { return fetch('https://rezka.ag/api/movies?limit=12&source=rezka').then(r => r.json()); } }
     class UAFlixApi   { static getMovies() { return fetch('https://uaflix.net/api/movies?limit=12&source=uaflix').then(r => r.json()); } }
@@ -36,7 +37,6 @@
     function updateHomeCards(source) {
         const home = Lampa.Activity.active();
         if (!home || home.name !== 'home') return;
-
         const render = home.render();
         render.find('.home-grid').remove();
         render.append(HomeActivity.render(source));
@@ -52,9 +52,7 @@
         Lampa.Select.show({
             title: 'Оберіть джерело',
             items: items,
-            onSelect: function (item) {
-                if (callback) callback(item.source);
-            },
+            onSelect: function (item) { if (callback) callback(item.source); },
             onBack: function () { Lampa.Controller.toggle('content'); }
         });
     }
@@ -166,7 +164,7 @@
             }
         });
 
-        // === 4. Реальне завантаження ===
+        // === 4. Реальне завантаження карток ===
         function HomeActivity.render(source) {
             const sections = [
                 { title: 'Нові фільми', type: 'movies' },
@@ -215,8 +213,7 @@
             return container;
         }
 
-        // Запуск
-        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — виправлено!`);
+        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — помилка виправлена!`);
     }
 
     if (window.appready) initPlugin();
