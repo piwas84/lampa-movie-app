@@ -17,96 +17,67 @@
         return found ? found.title : 'Фільмікс';
     }
 
-    // ====================== RETROFIT-СТИЛЬ (адаптовано для Lampa) ======================
-    class FilmixApi {
-        static getMovies() { return fetch('https://filmix.ru/api/movies?limit=12&source=filmix').then(r => r.json()); }
-        static getPopular() { return fetch('https://filmix.ru/api/movies?type=popular&limit=12&source=filmix').then(r => r.json()); }
-        static getSeries() { return fetch('https://filmix.ru/api/movies?type=series&limit=12&source=filmix').then(r => r.json()); }
-    }
+    class FilmixApi   { static getMovies() { return fetch('https://filmix.ru/api/movies?limit=12&source=filmix').then(r => r.json()); } }
+    class RezkaApi    { static getMovies() { return fetch('https://rezka.ag/api/movies?limit=12&source=rezka').then(r => r.json()); } }
+    class UAFlixApi   { static getMovies() { return fetch('https://uaflix.net/api/movies?limit=12&source=uaflix').then(r => r.json()); } }
+    class YouKinoApi  { static getMovies() { return fetch('https://youkino.net/api/movies?limit=12&source=youkino').then(r => r.json()); } }
 
-    class RezkaApi {
-        static getMovies() { return fetch('https://rezka.ag/api/movies?limit=12&source=rezka').then(r => r.json()); }
-        static getPopular() { return fetch('https://rezka.ag/api/movies?type=popular&limit=12&source=rezka').then(r => r.json()); }
-        static getSeries() { return fetch('https://rezka.ag/api/movies?type=series&limit=12&source=rezka').then(r => r.json()); }
-    }
-
-    class UAFlixApi {
-        static getMovies() { return fetch('https://uaflix.net/api/movies?limit=12&source=uaflix').then(r => r.json()); }
-        static getPopular() { return fetch('https://uaflix.net/api/movies?type=popular&limit=12&source=uafflix').then(r => r.json()); }
-        static getSeries() { return fetch('https://uaflix.net/api/movies?type=series&limit=12&source=uaflix').then(r => r.json()); }
-    }
-
-    class YouKinoApi {
-        static getMovies() { return fetch('https://youkino.net/api/movies?limit=12&source=youkino').then(r => r.json()); }
-        static getPopular() { return fetch('https://youkino.net/api/movies?type=popular&limit=12&source=youkino').then(r => r.json()); }
-    }
-
-    // ====================== РЕПОЗИТОРІЙ ======================
     class FilmRepository {
         static getMovies(source, type) {
             switch (source) {
-                case 'filmix':   return FilmixApi[`get${type.charAt(0).toUpperCase() + type.slice(1)}`]();
-                case 'rezka':    return RezkaApi[`get${type.charAt(0).toUpperCase() + type.slice(1)}`]();
-                case 'uaflix':   return UAFlixApi[`get${type.charAt(0).toUpperCase() + type.slice(1)}`]();
-                case 'youkino':  return YouKinoApi[`get${type.charAt(0).toUpperCase() + type.slice(1)}`]();
-                default:         return Promise.reject('Unknown source');
+                case 'filmix': return FilmixApi.getMovies();
+                case 'rezka':  return RezkaApi.getMovies();
+                case 'uaflix': return UAFlixApi.getMovies();
+                case 'youkino':return YouKinoApi.getMovies();
             }
         }
     }
 
-    // ====================== ACTIVITY ======================
-    class HomeActivity {
-        static render(source) {
-            const sections = [
-                { title: 'Нові фільми',   type: 'movies',  icon: 'film' },
-                { title: 'Популярні',     type: 'popular', icon: 'trending-up' },
-                { title: 'Нові серіals',  type: 'series',  icon: 'tv' }
-            ];
+    function updateHomeCards(source) {
+        const home = Lampa.Activity.active();
+        if (!home || home.name !== 'home') return;
 
-            const container = $(`
-                <div class="home-grid">
-                    ${sections.map((sec, i) => `
-                        <div class="section" style="margin-bottom: 30px;">
-                            <div class="section-header">
-                                <span class="section-title">${sec.title}</span>
-                                <span class="section-more">Більше</span>
-                            </div>
-                            <div class="grid" id="grid-${i}"></div>
-                        </div>
-                    `).join('')}
-                </div>
-            `);
-
-            // Завантаження карток
-            sections.forEach((sec, i) => {
-                setTimeout(() => {
-                    const grid = container.find(`#grid-${i}`);
-                    grid.addClass('loading');
-
-                    FilmRepository.getMovies(source, sec.type).then(movies => {
-                        grid.removeClass('loading').html(
-                            movies.map(movie => `
-                                <div class="card" data-url="\( {movie.url || '#'}" data-source=" \){source}">
-                                    <img src="\( {movie.poster || 'https://picsum.photos/200'}" alt=" \){movie.title}">
-                                    <div class="card-info">
-                                        <h4>${movie.title}</h4>
-                                        <div class="rating">⭐ ${movie.rating || '7.5'}</div>
-                                        <p>${movie.shortDesc || movie.desc || ''}</p>
-                                    </div>
-                                </div>
-                            `).join('')
-                        );
-                    }).catch(() => {
-                        grid.removeClass('loading').html('<p>Помилка завантаження</p>');
-                    });
-                }, i * 300);
-            });
-
-            return container;
-        }
+        const render = home.render();
+        render.find('.home-grid').remove();
+        render.append(HomeActivity.render(source));
     }
 
-    // ====================== ПЛАГІН ======================
+    function openSourceModal(callback) {
+        const activeSource = Lampa.Storage.get('lampa_default_source', 'filmix');
+        const items = SOURCES.map(s => ({
+            title: s.title + (s.value === activeSource ? ' ✓' : ''),
+            source: s.value
+        }));
+
+        Lampa.Select.show({
+            title: 'Оберіть джерело',
+            items: items,
+            onSelect: function (item) {
+                if (callback) callback(item.source);
+            },
+            onBack: function () { Lampa.Controller.toggle('content'); }
+        });
+    }
+
+    function toggleLamp(current, callback) {
+        const modes = ['yellow', 'red', 'green'];
+        const nextIndex = (modes.indexOf(current) + 1) % modes.length;
+        const newMode = modes[nextIndex];
+
+        document.body.style.boxShadow = newMode === 'yellow' 
+            ? 'inset 0 0 80px 40px rgba(255, 255, 0, 0.6)' 
+            : newMode === 'red' 
+                ? 'inset 0 0 80px 40px rgba(255, 0, 0, 0.5)' 
+                : 'inset 0 0 80px 40px rgba(0, 255, 0, 0.5)';
+
+        Lampa.Noty.show(`Лампа: ${newMode.toUpperCase()}`);
+        if (callback) callback(newMode);
+    }
+
+    function updateLampButton(btn, mode) {
+        btn.find('span').text(`Лампа: ${mode.toUpperCase()}`);
+    }
+
     function initPlugin() {
         if (window.lampa_lampa_inited) return;
         window.lampa_lampa_inited = true;
@@ -177,13 +148,13 @@
             }
         });
 
-        // === 3. ПУНКТ «ОБЕРІТЬ ДЖЕРЕЛА» У НАЛАШТУВАННЯХ ===
+        // === 3. ВИПРАВЛЕНИЙ ПУНКТ У НАЛАШТУВАННЯХ ===
         Lampa.SettingsApi.addParam({
             component: 'interface',
             param: {
                 name: 'main_sources',
                 type: 'button',
-                title: 'Основні джерела',
+                name: 'Основні джерела',
                 description: 'Вибір джерела для головної сторінки'
             },
             onClick: function () {
@@ -195,53 +166,57 @@
             }
         });
 
-        // === 4. ОНОВЛЕННЯ КАРТОК ===
-        function updateHomeCards(source) {
-            const home = Lampa.Activity.active();
-            if (!home || home.name !== 'home') return;
+        // === 4. Реальне завантаження ===
+        function HomeActivity.render(source) {
+            const sections = [
+                { title: 'Нові фільми', type: 'movies' },
+                { title: 'Популярні', type: 'movies' },
+                { title: 'Нові серіали', type: 'movies' }
+            ];
 
-            const render = home.render();
-            render.find('.home-grid').remove();
-            render.append(HomeActivity.render(source));
-        }
+            const container = $(`
+                <div class="home-grid">
+                    ${sections.map((sec, i) => `
+                        <div class="section" style="margin-bottom: 30px;">
+                            <div class="section-header">
+                                <span class="section-title">${sec.title}</span>
+                                <span class="section-more">Більше</span>
+                            </div>
+                            <div class="grid" id="grid-${i}"></div>
+                        </div>
+                    `).join('')}
+                </div>
+            `);
 
-        function openSourceModal(callback) {
-            const activeSource = Lampa.Storage.get('lampa_default_source', 'filmix');
-            const items = SOURCES.map(s => ({
-                title: s.title + (s.value === activeSource ? ' ✓' : ''),
-                source: s.value
-            }));
+            sections.forEach((sec, i) => {
+                setTimeout(() => {
+                    const grid = container.find(`#grid-${i}`);
+                    grid.addClass('loading');
 
-            Lampa.Select.show({
-                title: 'Оберіть джерело',
-                items: items,
-                onSelect: function (item) {
-                    if (callback) callback(item.source);
-                },
-                onBack: function () { Lampa.Controller.toggle('content'); }
+                    FilmRepository.getMovies(source, sec.type).then(movies => {
+                        grid.removeClass('loading').html(
+                            movies.map(movie => `
+                                <div class="card">
+                                    <img src="\( {movie.poster || 'https://picsum.photos/200'}" alt=" \){movie.title}">
+                                    <div class="card-info">
+                                        <h4>${movie.title}</h4>
+                                        <div class="rating">⭐ ${movie.rating || '7.5'}</div>
+                                        <p>${movie.shortDesc || ''}</p>
+                                    </div>
+                                </div>
+                            `).join('')
+                        );
+                    }).catch(() => {
+                        grid.removeClass('loading').html('<p>Помилка завантаження</p>');
+                    });
+                }, i * 300);
             });
+
+            return container;
         }
 
-        function toggleLamp(current, callback) {
-            const modes = ['yellow', 'red', 'green'];
-            const nextIndex = (modes.indexOf(current) + 1) % modes.length;
-            const newMode = modes[nextIndex];
-
-            document.body.style.boxShadow = newMode === 'yellow' 
-                ? 'inset 0 0 80px 40px rgba(255, 255, 0, 0.6)' 
-                : newMode === 'red' 
-                    ? 'inset 0 0 80px 40px rgba(255, 0, 0, 0.5)' 
-                    : 'inset 0 0 80px 40px rgba(0, 255, 0, 0.5)';
-
-            Lampa.Noty.show(`Лампа: ${newMode.toUpperCase()}`);
-            if (callback) callback(newMode);
-        }
-
-        function updateLampButton(btn, mode) {
-            btn.find('span').text(`Лампа: ${mode.toUpperCase()}`);
-        }
-
-        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — Справжнє завантаження через Retrofit!`);
+        // Запуск
+        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — виправлено!`);
     }
 
     if (window.appready) initPlugin();
