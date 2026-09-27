@@ -17,7 +17,7 @@
         return found ? found.title : 'Фільмікс';
     }
 
-    // API для завантаження (приклад)
+    // ====================== API ====================
     class FilmixApi   { static getMovies() { return fetch('https://filmix.ru/api/movies?limit=12&source=filmix').then(r => r.json()); } }
     class RezkaApi    { static getMovies() { return fetch('https://rezka.ag/api/movies?limit=12&source=rezka').then(r => r.json()); } }
     class UAFlixApi   { static getMovies() { return fetch('https://uaflix.net/api/movies?limit=12&source=uaflix').then(r => r.json()); } }
@@ -34,53 +34,61 @@
         }
     }
 
-    function updateHomeCards(source) {
-        const home = Lampa.Activity.active();
-        if (!home || home.name !== 'home') return;
-        const render = home.render();
-        render.find('.home-grid').remove();
-        render.append(HomeActivity.render(source));
-    }
+    // ====================== Активність головної сторінки ====================
+    function HomeActivity.render(source) {
+        const sections = [
+            { title: 'Нові фільми', type: 'movies' },
+            { title: 'Популярні', type: 'movies' },
+            { title: 'Нові серіали', type: 'movies' }
+        ];
 
-    function openSourceModal(callback) {
-        const activeSource = Lampa.Storage.get('lampa_default_source', 'filmix');
-        const items = SOURCES.map(s => ({
-            title: s.title + (s.value === activeSource ? ' ✓' : ''),
-            source: s.value
-        }));
+        const container = $(`
+            <div class="home-grid">
+                ${sections.map((sec, i) => `
+                    <div class="section" style="margin-bottom: 30px;">
+                        <div class="section-header">
+                            <span class="section-title">${sec.title}</span>
+                            <span class="section-more">Більше</span>
+                        </div>
+                        <div class="grid" id="grid-${i}"></div>
+                    </div>
+                `).join('')}
+            </div>
+        `);
 
-        Lampa.Select.show({
-            title: 'Оберіть джерело',
-            items: items,
-            onSelect: function (item) { if (callback) callback(item.source); },
-            onBack: function () { Lampa.Controller.toggle('content'); }
+        sections.forEach((sec, i) => {
+            setTimeout(() => {
+                const grid = container.find(`#grid-${i}`);
+                grid.addClass('loading');
+
+                FilmRepository.getMovies(source, sec.type).then(movies => {
+                    grid.removeClass('loading').html(
+                        movies.map(movie => `
+                            <div class="card">
+                                <img src="\( {movie.poster || 'https://picsum.photos/200'}" alt=" \){movie.title}">
+                                <div class="card-info">
+                                    <h4>${movie.title}</h4>
+                                    <div class="rating">⭐ ${movie.rating || '7.5'}</div>
+                                    <p>${movie.shortDesc || ''}</p>
+                                </div>
+                            </div>
+                        `).join('')
+                    );
+                }).catch(() => {
+                    grid.removeClass('loading').html('<p>Помилка завантаження</p>');
+                });
+            }, i * 300);
         });
+
+        return container;
     }
 
-    function toggleLamp(current, callback) {
-        const modes = ['yellow', 'red', 'green'];
-        const nextIndex = (modes.indexOf(current) + 1) % modes.length;
-        const newMode = modes[nextIndex];
-
-        document.body.style.boxShadow = newMode === 'yellow' 
-            ? 'inset 0 0 80px 40px rgba(255, 255, 0, 0.6)' 
-            : newMode === 'red' 
-                ? 'inset 0 0 80px 40px rgba(255, 0, 0, 0.5)' 
-                : 'inset 0 0 80px 40px rgba(0, 255, 0, 0.5)';
-
-        Lampa.Noty.show(`Лампа: ${newMode.toUpperCase()}`);
-        if (callback) callback(newMode);
-    }
-
-    function updateLampButton(btn, mode) {
-        btn.find('span').text(`Лампа: ${mode.toUpperCase()}`);
-    }
-
+    // ====================== ПЛАГІН ====================
     function initPlugin() {
         if (window.lampa_lampa_inited) return;
         window.lampa_lampa_inited = true;
 
-        // === 1. Кнопка лампи ===
+        // Кнопка лампи
         Lampa.Listener.follow('full', function (e) {
             if (e.type === 'complite') {
                 const render = e.object.activity.render();
@@ -113,7 +121,7 @@
             }
         });
 
-        // === 2. Кнопка джерела в повному вікні ===
+        // Кнопка джерела
         Lampa.Listener.follow('full', function (e) {
             if (e.type === 'complite') {
                 const render = e.object.activity.render();
@@ -146,7 +154,7 @@
             }
         });
 
-        // === 3. ВИПРАВЛЕНИЙ ПУНКТ У НАЛАШТУВАННЯХ ===
+        // === ПУНКТ У НАЛАШТУВАННЯХ (виправлений) ===
         Lampa.SettingsApi.addParam({
             component: 'interface',
             param: {
@@ -164,58 +172,56 @@
             }
         });
 
-        // === 4. Реальне завантаження карток ===
-        function HomeActivity.render(source) {
-            const sections = [
-                { title: 'Нові фільми', type: 'movies' },
-                { title: 'Популярні', type: 'movies' },
-                { title: 'Нові серіали', type: 'movies' }
-            ];
-
-            const container = $(`
-                <div class="home-grid">
-                    ${sections.map((sec, i) => `
-                        <div class="section" style="margin-bottom: 30px;">
-                            <div class="section-header">
-                                <span class="section-title">${sec.title}</span>
-                                <span class="section-more">Більше</span>
-                            </div>
-                            <div class="grid" id="grid-${i}"></div>
-                        </div>
-                    `).join('')}
-                </div>
-            `);
-
-            sections.forEach((sec, i) => {
-                setTimeout(() => {
-                    const grid = container.find(`#grid-${i}`);
-                    grid.addClass('loading');
-
-                    FilmRepository.getMovies(source, sec.type).then(movies => {
-                        grid.removeClass('loading').html(
-                            movies.map(movie => `
-                                <div class="card">
-                                    <img src="\( {movie.poster || 'https://picsum.photos/200'}" alt=" \){movie.title}">
-                                    <div class="card-info">
-                                        <h4>${movie.title}</h4>
-                                        <div class="rating">⭐ ${movie.rating || '7.5'}</div>
-                                        <p>${movie.shortDesc || ''}</p>
-                                    </div>
-                                </div>
-                            `).join('')
-                        );
-                    }).catch(() => {
-                        grid.removeClass('loading').html('<p>Помилка завантаження</p>');
-                    });
-                }, i * 300);
-            });
-
-            return container;
+        function updateHomeCards(source) {
+            const home = Lampa.Activity.active();
+            if (!home || home.name !== 'home') return;
+            const render = home.render();
+            render.find('.home-grid').remove();
+            render.append(HomeActivity.render(source));
         }
 
-        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — помилка виправлена!`);
+        function openSourceModal(callback) {
+            const activeSource = Lampa.Storage.get('lampa_default_source', 'filmix');
+            const items = SOURCES.map(s => ({
+                title: s.title + (s.value === activeSource ? ' ✓' : ''),
+                source: s.value
+            }));
+
+            Lampa.Select.show({
+                title: 'Оберіть джерело',
+                items: items,
+                onSelect: function (item) { if (callback) callback(item.source); },
+                onBack: function () { Lampa.Controller.toggle('content'); }
+            });
+        }
+
+        function toggleLamp(current, callback) {
+            const modes = ['yellow', 'red', 'green'];
+            const nextIndex = (modes.indexOf(current) + 1) % modes.length;
+            const newMode = modes[nextIndex];
+
+            document.body.style.boxShadow = newMode === 'yellow' 
+                ? 'inset 0 0 80px 40px rgba(255, 255, 0, 0.6)' 
+                : newMode === 'red' 
+                    ? 'inset 0 0 80px 40px rgba(255, 0, 0, 0.5)' 
+                    : 'inset 0 0 80px 40px rgba(0, 255, 0, 0.5)';
+
+            Lampa.Noty.show(`Лампа: ${newMode.toUpperCase()}`);
+            if (callback) callback(newMode);
+        }
+
+        function updateLampButton(btn, mode) {
+            btn.find('span').text(`Лампа: ${mode.toUpperCase()}`);
+        }
+
+        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — плагін завантажено`);
     }
 
-    if (window.appready) initPlugin();
-    else Lampa.Listener.follow('app', () => initPlugin());
+    if (window.appready) {
+        initPlugin();
+    } else {
+        Lampa.Listener.follow('app', function (e) {
+            if (e.type === 'ready') initPlugin();
+        });
+    }
 })();
