@@ -221,7 +221,7 @@
             btn.find('span').text(`Лампа: ${mode.toUpperCase()}`);
         }
 
-        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — пункт «Основні джерела» з’явиться!`);
+        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — пункт «Основні джерела» в меню налаштувань!`);
     }
 
     if (window.appready) {
