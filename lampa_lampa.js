@@ -3,7 +3,7 @@
 
     const PLUGIN_NAME = 'Лампа';
     const PLUGIN_ID = 'lampa_lampa';
-    const VERSION = '1.6.1';
+    const VERSION = '1.6.2';
 
     const SOURCES = [
         { title: 'Фільмікс', value: 'filmix' },
@@ -91,16 +91,6 @@
         if (window.lampa_lampa_inited) return;
         window.lampa_lampa_inited = true;
 
-        // 0. Реєстрація у списку плагінів Lampa
-        if (window.Lampa && Lampa.Plugins) {
-            Lampa.Plugins.add({
-                name: PLUGIN_NAME,
-                version: VERSION,
-                description: 'Плагін «Лампа» з вибором джерел',
-                type: 'interface'
-            });
-        }
-
         // === 1. Створення окремого розділу в меню «Налаштування» ===
         Lampa.Settings.addComponent({
             component: PLUGIN_ID,
@@ -108,7 +98,7 @@
             icon: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line></svg>'
         });
 
-        // Додавання параметру вибору джерела в новий розділ
+        // Додавання параметру вибору джерела
         Lampa.SettingsApi.addParam({
             component: PLUGIN_ID,
             param: {
@@ -132,7 +122,7 @@
             }
         });
 
-        // Додавання параметру режиму світіння в налаштування
+        // Додавання параметру кольору підсвічування
         Lampa.SettingsApi.addParam({
             component: PLUGIN_ID,
             param: {
@@ -154,14 +144,13 @@
             }
         });
 
-        // === 2. Кнопки у повному вікні картки ===
+        // === 2. Кнопки у картці фільму ===
         Lampa.Listener.follow('full', function (e) {
             if (e.type === 'complite') {
                 const render = e.object.activity.render();
                 const currentLamp = Lampa.Storage.get('lampa_lamp_mode', 'yellow');
                 const currentSource = Lampa.Storage.get('lampa_default_source', 'filmix');
 
-                // Кнопка Лампа
                 const lampButton = $(`
                     <div class="full-start__button selector lamp-button button--lamp">
                         <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
@@ -184,7 +173,6 @@
                     });
                 });
 
-                // Кнопка Джерело
                 const sourceButton = $(`
                     <div class="full-start__button selector button--source-switch">
                         <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
@@ -259,7 +247,7 @@
             btn.find('span').text(`Лампа: ${mode.toUpperCase()}`);
         }
 
-        console.log(`[${PLUGIN_NAME}] v${VERSION} — успішно ініціалізовано!`);
+        console.log(`[${PLUGIN_NAME}] v${VERSION} — успішно завантажено`);
     }
 
     if (window.app_ready) {
