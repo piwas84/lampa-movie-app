@@ -17,6 +17,7 @@
         return found ? found.title : 'Фільмікс';
     }
 
+    // ====================== API ====================
     class FilmixApi   { static getMovies() { return fetch('https://filmix.ru/api/movies?limit=12&source=filmix').then(r => r.json()); } }
     class RezkaApi    { static getMovies() { return fetch('https://rezka.ag/api/movies?limit=12&source=rezka').then(r => r.json()); } }
     class UAFlixApi   { static getMovies() { return fetch('https://uaflix.net/api/movies?limit=12&source=uaflix').then(r => r.json()); } }
@@ -33,6 +34,7 @@
         }
     }
 
+    // ====================== Головна сторінка ====================
     function HomeActivity.render(source) {
         const sections = [
             { title: 'Нові фільми', type: 'movies' },
@@ -81,11 +83,12 @@
         return container;
     }
 
+    // ====================== ПЛАГІН ====================
     function initPlugin() {
         if (window.lampa_lampa_inited) return;
         window.lampa_lampa_inited = true;
 
-        // Кнопка лампи
+        // === 1. Кнопка лампи ===
         Lampa.Listener.follow('full', function (e) {
             if (e.type === 'complite') {
                 const render = e.object.activity.render();
@@ -118,7 +121,7 @@
             }
         });
 
-        // Кнопка джерела
+        // === 2. Кнопка джерела в повному вікні ===
         Lampa.Listener.follow('full', function (e) {
             if (e.type === 'complite') {
                 const render = e.object.activity.render();
@@ -151,24 +154,32 @@
             }
         });
 
-        // === ОКРЕМИЙ ПУНКТ "ОСНОВНІ ДЖЕРЕЛА" ===
-        Lampa.SettingsApi.addParam({
-            component: 'interface',
-            param: {
-                name: 'main_sources',
-                type: 'button',
-                name: 'Основні джерела',
-                description: 'Вибір джерела для головної сторінки'
-            },
-            onClick: function () {
-                openSourceModal(function (selectedSource) {
-                    Lampa.Storage.set('lampa_default_source', selectedSource);
-                    Lampa.Noty.show('Джерело змінено на: ' + getSourceName(selectedSource));
-                    updateHomeCards(selectedSource);
+        // ====================== ОКРЕМИЙ ПУНКТ У НАЛАШТУВАННЯХ ======================
+        Lampa.Listener.follow('settings', function (e) {
+            if (e.type === 'render' && e.object.name === 'settings') {
+                const render = e.object.render();
+
+                const sourcesBtn = $(`
+                    <div class="setting-item" data-action="open-sources">
+                        <div class="setting-icon">🌐</div>
+                        <div class="setting-name">Основні джерела</div>
+                        <div class="setting-subtitle">Фільмікс / Резка / Юафлікс / Юакіно</div>
+                    </div>
+                `);
+
+                sourcesBtn.on('hover:enter', function () {
+                    openSourceModal(function (selectedSource) {
+                        Lampa.Storage.set('lampa_default_source', selectedSource);
+                        Lampa.Noty.show('Джерело змінено на: ' + getSourceName(selectedSource));
+                        updateHomeCards(selectedSource);
+                    });
                 });
+
+                render.find('.settings-list').prepend(sourcesBtn);
             }
         });
 
+        // ====================== РЕАЛЬНЕ ЗАВАНТАЖЕННЯ ====================
         function updateHomeCards(source) {
             const home = Lampa.Activity.active();
             if (!home || home.name !== 'home') return;
@@ -211,7 +222,7 @@
             btn.find('span').text(`Лампа: ${mode.toUpperCase()}`);
         }
 
-        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — пункт "Основні джерела" готовий!`);
+        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — меню «Основні джерела» готове!`);
     }
 
     if (window.appready) {
