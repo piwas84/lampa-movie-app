@@ -3,7 +3,7 @@
 
     const PLUGIN_NAME = 'Лампа';
     const PLUGIN_ID = 'lampa_lampa';
-    const VERSION = '1.6.0';
+    const VERSION = '1.6.1';
 
     const SOURCES = [
         { title: 'Фільмікс', value: 'filmix' },
@@ -154,7 +154,7 @@
             }
         });
 
-        // ====================== ОКРЕМИЙ ПУНКТ У НАЛАШТУВАННЯХ ======================
+        // ====================== ОКРЕМИЙ ПУНКТ "ОСНОВНІ ДЖЕРЕЛА" ======================
         Lampa.Listener.follow('settings', function (e) {
             if (e.type === 'render' && e.object.name === 'settings') {
                 const render = e.object.render();
@@ -179,7 +179,7 @@
             }
         });
 
-        // ====================== РЕАЛЬНЕ ЗАВАНТАЖЕННЯ ====================
+        // ====================== ОНОВЛЕННЯ КАРТОК ======================
         function updateHomeCards(source) {
             const home = Lampa.Activity.active();
             if (!home || home.name !== 'home') return;
@@ -222,7 +222,7 @@
             btn.find('span').text(`Лампа: ${mode.toUpperCase()}`);
         }
 
-        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — меню «Основні джерела» готове!`);
+        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — пункт «Основні джерела» в меню налаштувань!`);
     }
 
     if (window.appready) {
