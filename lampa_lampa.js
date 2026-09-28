@@ -154,80 +154,18 @@
             }
         });
 
-        // ====================== ПАРАМЕТР ПРЯМО В "ІНТЕРФЕЙС" ======================
-        Lampa.SettingsApi.addParam({
-            component: 'interface',
-            param: {
-                name: 'lampa_main_source',
-                type: 'select',
-                values: SOURCES.reduce((acc, s) => {
-                    acc[s.value] = s.title;
-                    return acc;
-                }, {}),
-                default: 'filmix'
-            },
-            field: {
-                name: 'Основне джерело',
-                description: 'Звідки брати фільми на головній сторінці'
-            },
-            onChange: function (value) {
-                Lampa.Storage.set('lampa_default_source', value);
-                Lampa.Noty.show('Джерело змінено на: ' + getSourceName(value));
-                updateHomeCards(value);
-            }
-        });
+        // ====================== ОКРЕМИЙ ПУНКТ У НАЛАШТУВАННЯХ ======================
+        Lampa.Listener.follow('settings', function (e) {
+            if (e.type === 'render' && e.object.name === 'settings') {
+                const render = e.object.render();
 
-        // ====================== ОНОВЛЕННЯ КАРТОК ======================
-        function updateHomeCards(source) {
-            const home = Lampa.Activity.active();
-            if (!home || home.name !== 'home') return;
-            const render = home.render();
-            render.find('.home-grid').remove();
-            render.append(HomeActivity.render(source));
-        }
+                const sourcesBtn = $(`
+                    <div class="setting-item" data-action="open-sources">
+                        <div class="setting-icon">🌐</div>
+                        <div class="setting-name">Основні джерела</div>
+                        <div class="setting-subtitle">Фільмікс / Резка / Юафлікс / Юакіно</div>
+                    </div>
+                `);
 
-        function openSourceModal(callback) {
-            const activeSource = Lampa.Storage.get('lampa_default_source', 'filmix');
-            const items = SOURCES.map(s => ({
-                title: s.title + (s.value === activeSource ? ' ✓' : ''),
-                source: s.value
-            }));
-
-            Lampa.Select.show({
-                title: 'Оберіть джерело',
-                items: items,
-                onSelect: function (item) { if (callback) callback(item.source); },
-                onBack: function () { Lampa.Controller.toggle('content'); }
-            });
-        }
-
-        function toggleLamp(current, callback) {
-            const modes = ['yellow', 'red', 'green'];
-            const nextIndex = (modes.indexOf(current) + 1) % modes.length;
-            const newMode = modes[nextIndex];
-
-            document.body.style.boxShadow = newMode === 'yellow' 
-                ? 'inset 0 0 80px 40px rgba(255, 255, 0, 0.6)' 
-                : newMode === 'red' 
-                    ? 'inset 0 0 80px 40px rgba(255, 0, 0, 0.5)' 
-                    : 'inset 0 0 80px 40px rgba(0, 255, 0, 0.5)';
-
-            Lampa.Noty.show(`Лампа: ${newMode.toUpperCase()}`);
-            if (callback) callback(newMode);
-        }
-
-        function updateLampButton(btn, mode) {
-            btn.find('span').text(`Лампа: ${mode.toUpperCase()}`);
-        }
-
-        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — параметр у «Інтерфейс» + пункт у меню!`);
-    }
-
-    if (window.appready) {
-        initPlugin();
-    } else {
-        Lampa.Listener.follow('app', function (e) {
-            if (e.type === 'ready') initPlugin();
-        });
-    }
-})();
+                sourcesBtn.on('hover:enter', function () {
+                    openSourceModal(function (selectedSource)
