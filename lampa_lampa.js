@@ -154,7 +154,7 @@
             }
         });
 
-        // ====================== ОКРЕМИЙ ПУНКТ "ОСНОВНІ ДЖЕРЕЛА" ======================
+        // ====================== ОКРЕМИЙ ПУНКТ У НАЛАШТУВАННЯХ ======================
         Lampa.Listener.follow('settings', function (e) {
             if (e.type === 'render' && e.object.name === 'settings') {
                 const render = e.object.render();
@@ -179,7 +179,6 @@
             }
         });
 
-        // ====================== ОНОВЛЕННЯ КАРТОК ======================
         function updateHomeCards(source) {
             const home = Lampa.Activity.active();
             if (!home || home.name !== 'home') return;
@@ -222,7 +221,7 @@
             btn.find('span').text(`Лампа: ${mode.toUpperCase()}`);
         }
 
-        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — пункт «Основні джерела» в меню налаштувань!`);
+        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — пункт «Основні джерела» з’явиться!`);
     }
 
     if (window.appready) {
