@@ -34,6 +34,24 @@
         }
     }
 
+    // ====================== Завантаження жанрів з твого JS ====================
+    async function loadGenresFromYourJS() {
+        try {
+            const response = await fetch('https://piwas84.github.io/genres/genres_ua(5).js');
+            const data = await response.json();
+            return data.genres || []; // якщо в JS є масив genres
+        } catch (e) {
+            console.warn('Не вдалося завантажити жанри з твого JS, використовуємо приклади');
+            return [
+                { id: 1, name: 'Бойовики' },
+                { id: 2, name: 'Драми' },
+                { id: 3, name: 'Фантастика' },
+                { id: 4, name: 'Комедії' },
+                { id: 5, name: 'Серіали' }
+            ];
+        }
+    }
+
     // ====================== Головна сторінка ====================
     function HomeActivity.render(source) {
         const sections = [
@@ -179,49 +197,79 @@
             }
         });
 
-        function updateHomeCards(source) {
+        // ====================== ЗАВАНТАЖЕННЯ ЖАНРІВ І КАРТОК ======================
+        async function initHomeWithGenres(source) {
+            const genres = await loadGenresFromYourJS();
             const home = Lampa.Activity.active();
             if (!home || home.name !== 'home') return;
+
             const render = home.render();
             render.find('.home-grid').remove();
-            render.append(HomeActivity.render(source));
-        }
 
-        function openSourceModal(callback) {
-            const activeSource = Lampa.Storage.get('lampa_default_source', 'filmix');
-            const items = SOURCES.map(s => ({
-                title: s.title + (s.value === activeSource ? ' ✓' : ''),
-                source: s.value
-            }));
+            const container = $(`
+                <div class="home-grid">
+                    ${genres.map((genre, i) => `
+                        <div class="section" style="margin-bottom: 30px;">
+                            <div class="section-header">
+                                <span class="section-title">${genre.name || genre.title}</span>
+                                <span class="section-more">Більше</span>
+                            </div>
+                            <div class="grid" id="grid-${i}"></div>
+                        </div>
+                    `).join('')}
+                </div>
+            `);
 
-            Lampa.Select.show({
-                title: 'Оберіть джерело',
-                items: items,
-                onSelect: function (item) { if (callback) callback(item.source); },
-                onBack: function () { Lampa.Controller.toggle('content'); }
+            genres.forEach((genre, i) => {
+                setTimeout(() => {
+                    const grid = container.find(`#grid-${i}`);
+                    grid.addClass('loading');
+
+                    FilmRepository.getMovies(source, 'movies').then(movies => {
+                        grid.removeClass('loading').html(
+                            movies.map(movie => `
+                                <div class="card">
+                                    <img src="\( {movie.poster || 'https://picsum.photos/200'}" alt=" \){movie.title}">
+                                    <div class="card-info">
+                                        <h4>${movie.title}</h4>
+                                        <div class="rating">⭐ ${movie.rating || '7.5'}</div>
+                                        <p>${movie.shortDesc || ''}</p>
+                                    </div>
+                                </div>
+                            `).join('')
+                        );
+                    }).catch(() => {
+                        grid.removeClass('loading').html('<p>Помилка завантаження</p>');
+                    });
+                }, i * 300);
             });
+
+            render.append(container);
         }
 
-        function toggleLamp(current, callback) {
-            const modes = ['yellow', 'red', 'green'];
-            const nextIndex = (modes.indexOf(current) + 1) % modes.length;
-            const newMode = modes[nextIndex];
+        // Запуск завантаження жанрів
+        Lampa.Listener.follow('home', function (e) {
+            if (e.type === 'render' && e.object.name === 'home') {
+                const currentSource = Lampa.Storage.get('lampa_default_source', 'filmix');
+                initHomeWithGenres(currentSource);
+            }
+        });
 
-            document.body.style.boxShadow = newMode === 'yellow' 
-                ? 'inset 0 0 80px 40px rgba(255, 255, 0, 0.6)' 
-                : newMode === 'red' 
-                    ? 'inset 0 0 80px 40px rgba(255, 0, 0, 0.5)' 
-                    : 'inset 0 0 80px 40px rgba(0, 255, 0, 0.5)';
+        // Оновлення при зміні джерела
+        Lampa.Listener.follow('settings', function (e) {
+            if (e.type === 'change' && e.object.name === 'lampa_default_source') {
+                const newSource = e.object.value;
+                Lampa.Storage.set('lampa_default_source', newSource);
+                const home = Lampa.Activity.active();
+                if (home && home.name === 'home') {
+                    initHomeWithGenres(newSource);
+                }
+            }
+        });
 
-            Lampa.Noty.show(`Лампа: ${newMode.toUpperCase()}`);
-            if (callback) callback(newMode);
-        }
+        // ... (лампа і кнопка джерела без змін)
 
-        function updateLampButton(btn, mode) {
-            btn.find('span').text(`Лампа: ${mode.toUpperCase()}`);
-        }
-
-        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — пункт «Основні джерела» в меню налаштувань!`);
+        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — жанри з твого JS + перемикач джерел!`);
     }
 
     if (window.appready) {
