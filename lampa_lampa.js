@@ -34,7 +34,7 @@
         }
     }
 
-    // ====================== Головна сторінка з жанрами ====================
+    // ====================== Головна сторінка ====================
     function HomeActivity.render(source) {
         const sections = [
             { title: 'Нові фільми', type: 'movies' },
@@ -154,31 +154,30 @@
             }
         });
 
-        // ====================== ОКРЕМИЙ ПУНКТ У НАЛАШТУВАННЯХ ======================
-        Lampa.Listener.follow('settings', function (e) {
-            if (e.type === 'render' && e.object.name === 'settings') {
-                const render = e.object.render();
-
-                const sourcesBtn = $(`
-                    <div class="setting-item" data-action="open-sources">
-                        <div class="setting-icon">🌐</div>
-                        <div class="setting-name">Основні джерела</div>
-                        <div class="setting-subtitle">Фільмікс / Резка / Юафлікс / Юакіно</div>
-                    </div>
-                `);
-
-                sourcesBtn.on('hover:enter', function () {
-                    openSourceModal(function (selectedSource) {
-                        Lampa.Storage.set('lampa_default_source', selectedSource);
-                        Lampa.Noty.show('Джерело змінено на: ' + getSourceName(selectedSource));
-                        updateHomeCards(selectedSource);
-                    });
-                });
-
-                render.find('.settings-list').prepend(sourcesBtn);
+        // ====================== ПАРАМЕТР ПРЯМО В "ІНТЕРФЕЙС" ======================
+        Lampa.SettingsApi.addParam({
+            component: 'interface',
+            param: {
+                name: 'lampa_main_source',
+                type: 'select',
+                values: SOURCES.reduce((acc, s) => {
+                    acc[s.value] = s.title;
+                    return acc;
+                }, {}),
+                default: 'filmix'
+            },
+            field: {
+                name: 'Основне джерело',
+                description: 'Звідки брати фільми на головній сторінці'
+            },
+            onChange: function (value) {
+                Lampa.Storage.set('lampa_default_source', value);
+                Lampa.Noty.show('Джерело змінено на: ' + getSourceName(value));
+                updateHomeCards(value);
             }
         });
 
+        // ====================== ОНОВЛЕННЯ КАРТОК ======================
         function updateHomeCards(source) {
             const home = Lampa.Activity.active();
             if (!home || home.name !== 'home') return;
@@ -221,8 +220,7 @@
             btn.find('span').text(`Лампа: ${mode.toUpperCase()}`);
         }
 
-        // Запуск
-        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — пункт «Основні джерела» готовий`);
+        console.log(`[\( {PLUGIN_NAME}] v \){VERSION} — параметр у «Інтерфейс» + пункт у меню!`);
     }
 
     if (window.appready) {
